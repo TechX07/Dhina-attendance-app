@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
+import SalaryManagement from './pages/SalaryManagement';
 import { getSession } from './utils/auth';
 
 function RootRedirect() {
@@ -22,6 +23,14 @@ export default function App() {
           element={
             <ProtectedRoute allowedRole="admin">
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/salary"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <SalaryManagement />
             </ProtectedRoute>
           }
         />

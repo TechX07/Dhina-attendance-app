@@ -15,6 +15,8 @@ export default function AdminDashboard() {
     const [showAddForm, setShowAddForm] = useState(false);
     const [newEmployee, setNewEmployee] = useState({ name: '', username: '', password: '' });
     const [adding, setAdding] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [editData, setEditData] = useState({ name: '', username: '' });
 
     // Attendance state
     const [attendance, setAttendance] = useState([]);
@@ -102,6 +104,30 @@ export default function AdminDashboard() {
             addToast('Employee deleted', 'success');
             fetchEmployees();
             fetchAttendance();
+        }
+    }
+
+    function startEdit(emp) {
+        setEditingId(emp.id);
+        setEditData({ name: emp.name, username: emp.username });
+    }
+
+    async function saveEdit(id) {
+        const { error } = await supabase
+            .from('users')
+            .update({ name: editData.name, username: editData.username })
+            .eq('id', id);
+
+        if (error) {
+            if (error.code === '23505') {
+                addToast('Username already exists', 'error');
+            } else {
+                addToast('Failed to update employee', 'error');
+            }
+        } else {
+            addToast('Employee updated', 'success');
+            setEditingId(null);
+            fetchEmployees();
         }
     }
 
@@ -235,24 +261,75 @@ export default function AdminDashboard() {
                                         {employees.map((emp) => (
                                             <tr key={emp.id} className="hover:bg-gray-800/50">
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 bg-indigo-600/30 text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold">
-                                                            {emp.name[0].toUpperCase()}
+                                                    {editingId === emp.id ? (
+                                                        <input
+                                                            type="text"
+                                                            value={editData.name}
+                                                            onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                                                            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 bg-indigo-600/30 text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold">
+                                                                {emp.name[0].toUpperCase()}
+                                                            </div>
+                                                            <span className="text-sm text-white font-medium">{emp.name}</span>
                                                         </div>
-                                                        <span className="text-sm text-white font-medium">{emp.name}</span>
-                                                    </div>
+                                                    )}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-400">{emp.username}</td>
+                                                <td className="px-6 py-4">
+                                                    {editingId === emp.id ? (
+                                                        <input
+                                                            type="text"
+                                                            value={editData.username}
+                                                            onChange={(e) => setEditData({ ...editData, username: e.target.value })}
+                                                            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        />
+                                                    ) : (
+                                                        <span className="text-sm text-gray-400">{emp.username}</span>
+                                                    )}
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-gray-400">
                                                     {new Date(emp.created_at).toLocaleDateString()}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => deleteEmployee(emp.id, emp.name)}
-                                                        className="px-3 py-1.5 bg-red-600/20 text-red-400 hover:bg-red-600/30 text-xs font-medium rounded-lg transition-colors cursor-pointer"
-                                                    >
-                                                        Delete
-                                                    </button>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {editingId === emp.id ? (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => saveEdit(emp.id)}
+                                                                    className="p-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-lg transition-colors cursor-pointer"
+                                                                    title="Save"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setEditingId(null)}
+                                                                    className="p-1.5 bg-gray-700/50 text-gray-400 hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+                                                                    title="Cancel"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => startEdit(emp)}
+                                                                    className="p-1.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 rounded-lg transition-colors cursor-pointer"
+                                                                    title="Edit"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => deleteEmployee(emp.id, emp.name)}
+                                                                    className="p-1.5 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-lg transition-colors cursor-pointer"
+                                                                    title="Delete"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

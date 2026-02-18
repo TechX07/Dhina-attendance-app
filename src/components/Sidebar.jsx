@@ -14,6 +14,7 @@ export default function Sidebar() {
 
     const adminLinks = [
         { to: '/admin', label: 'Dashboard' },
+        { to: '/admin/salary', label: 'Salary' },
     ];
 
     const employeeLinks = [
@@ -55,6 +56,7 @@ export default function Sidebar() {
                         <NavLink
                             key={link.to}
                             to={link.to}
+                            end
                             onClick={() => setOpen(false)}
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
