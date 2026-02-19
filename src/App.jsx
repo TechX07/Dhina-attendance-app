@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ToastProvider } from './components/Toast';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+import OfflineIndicator from './components/OfflineIndicator';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
@@ -16,6 +18,8 @@ function RootRedirect() {
 export default function App() {
   return (
     <ToastProvider>
+      <OfflineIndicator />
+      <PWAInstallPrompt />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
