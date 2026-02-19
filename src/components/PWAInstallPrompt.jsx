@@ -1,9 +1,19 @@
 import { usePWAInstall } from '../utils/pwa';
+import { useLocation } from 'react-router-dom';
 
 export default function PWAInstallPrompt() {
   const { canInstall, isInstalled, install } = usePWAInstall();
+  const location = useLocation();
 
-  if (isInstalled || !canInstall) {
+  // Only show on login page
+  const isLoginPage = location.pathname === '/login';
+
+  // Check if device is mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+
+  if (isInstalled || !canInstall || !isLoginPage || !isMobile) {
     return null;
   }
 
