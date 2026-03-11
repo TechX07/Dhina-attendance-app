@@ -152,11 +152,11 @@ export default function SalaryManagement() {
     return (
         <div className="flex min-h-screen bg-gray-950">
             <Sidebar />
-            <main className="flex-1 p-4 md:p-8 pt-16 md:pt-8">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-white">Salary Management</h1>
-                    <p className="text-gray-400 mt-1">
-                        Manage employee salaries. Working days (excl. Sundays) this month: {workingDays}
+            <main className="flex-1 p-3 sm:p-4 md:p-8 pt-16 md:pt-8">
+                <div className="mb-6 sm:mb-8">
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">Salary Management</h1>
+                    <p className="text-gray-400 mt-1 text-sm sm:text-base">
+                        Manage employee salaries. Working days (excl. Sundays): <span className="text-white font-medium">{workingDays}</span>
                     </p>
                 </div>
 
@@ -165,7 +165,7 @@ export default function SalaryManagement() {
                     <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full sm:w-auto px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                         {monthOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>
@@ -175,10 +175,10 @@ export default function SalaryManagement() {
                     </select>
                 </div>
 
-                {/* Salary Table */}
+                {/* Salary Section */}
                 <div className="bg-gray-900 rounded-2xl border border-gray-800">
-                    <div className="px-6 py-4 border-b border-gray-800">
-                        <h2 className="text-lg font-semibold text-white">
+                    <div className="px-4 sm:px-6 py-4 border-b border-gray-800">
+                        <h2 className="text-base sm:text-lg font-semibold text-white">
                             Employee Salaries ({employees.length})
                         </h2>
                     </div>
@@ -190,48 +190,118 @@ export default function SalaryManagement() {
                             No employees found.
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-gray-800">
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Employee
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Monthly Salary
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Daily Salary
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Leave Days
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Final Salary
-                                        </th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-800">
-                                    {employees.map((emp) => {
-                                        const data = salaryData[emp.id] || { monthly_salary: 0, leave_days: 0 };
-                                        const monthlySalary = parseFloat(data.monthly_salary) || 0;
-                                        const leaveDays = parseInt(data.leave_days) || 0;
-                                        const { dailySalary, finalSalary } = calculateSalary(monthlySalary, leaveDays);
+                        <>
+                            {/* Desktop table */}
+                            <div className="hidden lg:block overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-gray-800">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Employee
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Monthly Salary
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Daily Salary
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Leave Days
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Final Salary
+                                            </th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-800">
+                                        {employees.map((emp) => {
+                                            const data = salaryData[emp.id] || { monthly_salary: 0, leave_days: 0 };
+                                            const monthlySalary = parseFloat(data.monthly_salary) || 0;
+                                            const leaveDays = parseInt(data.leave_days) || 0;
+                                            const { dailySalary, finalSalary } = calculateSalary(monthlySalary, leaveDays);
 
-                                        return (
-                                            <tr key={emp.id} className="hover:bg-gray-800/50">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 bg-indigo-600/30 text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold">
-                                                            {emp.name[0].toUpperCase()}
+                                            return (
+                                                <tr key={emp.id} className="hover:bg-gray-800/50">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 bg-indigo-600/30 text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold">
+                                                                {emp.name[0].toUpperCase()}
+                                                            </div>
+                                                            <span className="text-sm text-white font-medium">{emp.name}</span>
                                                         </div>
-                                                        <span className="text-sm text-white font-medium">{emp.name}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            value={data.monthly_salary || ''}
+                                                            onChange={(e) =>
+                                                                handleFieldChange(emp.id, 'monthly_salary', e.target.value)
+                                                            }
+                                                            placeholder="0"
+                                                            className="w-28 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        />
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-300">
+                                                        {monthlySalary > 0 ? `${dailySalary.toFixed(2)}` : '—'}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max={workingDays}
+                                                            value={data.leave_days || ''}
+                                                            onChange={(e) =>
+                                                                handleFieldChange(emp.id, 'leave_days', e.target.value)
+                                                            }
+                                                            placeholder="0"
+                                                            className="w-20 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        />
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm font-medium text-emerald-400">
+                                                        {monthlySalary > 0 ? `${finalSalary.toFixed(2)}` : '—'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button
+                                                            onClick={() => saveSalary(emp.id, monthlySalary, leaveDays)}
+                                                            disabled={saving[emp.id]}
+                                                            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                                        >
+                                                            {saving[emp.id] ? 'Saving...' : 'Save'}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile / Tablet cards */}
+                            <div className="lg:hidden divide-y divide-gray-800">
+                                {employees.map((emp) => {
+                                    const data = salaryData[emp.id] || { monthly_salary: 0, leave_days: 0 };
+                                    const monthlySalary = parseFloat(data.monthly_salary) || 0;
+                                    const leaveDays = parseInt(data.leave_days) || 0;
+                                    const { dailySalary, finalSalary } = calculateSalary(monthlySalary, leaveDays);
+
+                                    return (
+                                        <div key={emp.id} className="p-4 animate-fade-in-up">
+                                            {/* Employee name */}
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-10 h-10 bg-indigo-600/30 text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                                                    {emp.name[0].toUpperCase()}
+                                                </div>
+                                                <span className="text-sm text-white font-medium">{emp.name}</span>
+                                            </div>
+
+                                            {/* Input fields in a grid */}
+                                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                                <div>
+                                                    <label className="block text-xs text-gray-400 mb-1">Monthly Salary</label>
                                                     <input
                                                         type="number"
                                                         min="0"
@@ -240,13 +310,11 @@ export default function SalaryManagement() {
                                                             handleFieldChange(emp.id, 'monthly_salary', e.target.value)
                                                         }
                                                         placeholder="0"
-                                                        className="w-28 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                     />
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-300">
-                                                    {monthlySalary > 0 ? `${dailySalary.toFixed(2)}` : '—'}
-                                                </td>
-                                                <td className="px-6 py-4">
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-400 mb-1">Leave Days</label>
                                                     <input
                                                         type="number"
                                                         min="0"
@@ -256,27 +324,40 @@ export default function SalaryManagement() {
                                                             handleFieldChange(emp.id, 'leave_days', e.target.value)
                                                         }
                                                         placeholder="0"
-                                                        className="w-20 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                     />
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-medium text-emerald-400">
-                                                    {monthlySalary > 0 ? `${finalSalary.toFixed(2)}` : '—'}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => saveSalary(emp.id, monthlySalary, leaveDays)}
-                                                        disabled={saving[emp.id]}
-                                                        className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
-                                                    >
-                                                        {saving[emp.id] ? 'Saving...' : 'Save'}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Computed values + save */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex gap-4 text-xs">
+                                                    <div>
+                                                        <span className="text-gray-400">Daily: </span>
+                                                        <span className="text-gray-300">
+                                                            {monthlySalary > 0 ? dailySalary.toFixed(2) : '—'}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-400">Final: </span>
+                                                        <span className="text-emerald-400 font-medium">
+                                                            {monthlySalary > 0 ? finalSalary.toFixed(2) : '—'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => saveSalary(emp.id, monthlySalary, leaveDays)}
+                                                    disabled={saving[emp.id]}
+                                                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                                >
+                                                    {saving[emp.id] ? 'Saving...' : 'Save'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
                     )}
                 </div>
             </main>

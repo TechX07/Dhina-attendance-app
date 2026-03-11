@@ -157,29 +157,29 @@ export default function AdminDashboard() {
     return (
         <div className="flex min-h-screen bg-gray-950">
             <Sidebar />
-            <main className="flex-1 p-4 md:p-8 pt-16 md:pt-8">
+            <main className="flex-1 p-3 sm:p-4 md:p-8 pt-16 md:pt-8">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-                    <p className="text-gray-400 mt-1">Manage employees and track attendance.</p>
+                <div className="mb-6 sm:mb-8">
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">Admin Dashboard</h1>
+                    <p className="text-gray-400 mt-1 text-sm sm:text-base">Manage employees and track attendance.</p>
                 </div>
 
                 {/* Tabs */}
                 <div className="flex gap-2 mb-6">
                     <button
                         onClick={() => setTab('employees')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${tab === 'employees'
+                        className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${tab === 'employees'
                             ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 active:bg-gray-600'
                             }`}
                     >
                         Employees
                     </button>
                     <button
                         onClick={() => setTab('attendance')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${tab === 'attendance'
+                        className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${tab === 'attendance'
                             ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 active:bg-gray-600'
                             }`}
                     >
                         Attendance
@@ -189,13 +189,13 @@ export default function AdminDashboard() {
                 {/* Employees Tab */}
                 {tab === 'employees' && (
                     <div className="bg-gray-900 rounded-2xl border border-gray-800">
-                        <div className="px-6 py-4 border-b border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <h2 className="text-lg font-semibold text-white">
+                        <div className="px-4 sm:px-6 py-4 border-b border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <h2 className="text-base sm:text-lg font-semibold text-white">
                                 Employees ({employees.length})
                             </h2>
                             <button
                                 onClick={() => setShowAddForm(!showAddForm)}
-                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+                                className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
                             >
                                 {showAddForm ? 'Cancel' : '+ Add Employee'}
                             </button>
@@ -203,7 +203,7 @@ export default function AdminDashboard() {
 
                         {/* Add Employee Form */}
                         {showAddForm && (
-                            <form onSubmit={addEmployee} className="px-6 py-4 border-b border-gray-800 bg-gray-800/50">
+                            <form onSubmit={addEmployee} className="px-4 sm:px-6 py-4 border-b border-gray-800 bg-gray-800/50">
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <input
                                         type="text"
@@ -233,7 +233,7 @@ export default function AdminDashboard() {
                                 <button
                                     type="submit"
                                     disabled={adding}
-                                    className="mt-3 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+                                    className="mt-3 w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
                                 >
                                     {adding ? 'Adding...' : 'Add Employee'}
                                 </button>
@@ -247,95 +247,169 @@ export default function AdminDashboard() {
                                 No employees added yet.
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b border-gray-800">
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Username</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-800">
-                                        {employees.map((emp) => (
-                                            <tr key={emp.id} className="hover:bg-gray-800/50">
-                                                <td className="px-6 py-4">
-                                                    {editingId === emp.id ? (
-                                                        <input
-                                                            type="text"
-                                                            value={editData.name}
-                                                            onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                                                            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                        />
-                                                    ) : (
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 bg-indigo-600/30 text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold">
-                                                                {emp.name[0].toUpperCase()}
-                                                            </div>
-                                                            <span className="text-sm text-white font-medium">{emp.name}</span>
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {editingId === emp.id ? (
-                                                        <input
-                                                            type="text"
-                                                            value={editData.username}
-                                                            onChange={(e) => setEditData({ ...editData, username: e.target.value })}
-                                                            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                        />
-                                                    ) : (
-                                                        <span className="text-sm text-gray-400">{emp.username}</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-400">
-                                                    {new Date(emp.created_at).toLocaleDateString()}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        {editingId === emp.id ? (
-                                                            <>
-                                                                <button
-                                                                    onClick={() => saveEdit(emp.id)}
-                                                                    className="p-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-lg transition-colors cursor-pointer"
-                                                                    title="Save"
-                                                                >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setEditingId(null)}
-                                                                    className="p-1.5 bg-gray-700/50 text-gray-400 hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-                                                                    title="Cancel"
-                                                                >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                                                </button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <button
-                                                                    onClick={() => startEdit(emp)}
-                                                                    className="p-1.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 rounded-lg transition-colors cursor-pointer"
-                                                                    title="Edit"
-                                                                >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => deleteEmployee(emp.id, emp.name)}
-                                                                    className="p-1.5 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-lg transition-colors cursor-pointer"
-                                                                    title="Delete"
-                                                                >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </td>
+                            <>
+                                {/* Desktop table */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-gray-800">
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Username</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-800">
+                                            {employees.map((emp) => (
+                                                <tr key={emp.id} className="hover:bg-gray-800/50">
+                                                    <td className="px-6 py-4">
+                                                        {editingId === emp.id ? (
+                                                            <input
+                                                                type="text"
+                                                                value={editData.name}
+                                                                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                                                                className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-8 h-8 bg-indigo-600/30 text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold">
+                                                                    {emp.name[0].toUpperCase()}
+                                                                </div>
+                                                                <span className="text-sm text-white font-medium">{emp.name}</span>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {editingId === emp.id ? (
+                                                            <input
+                                                                type="text"
+                                                                value={editData.username}
+                                                                onChange={(e) => setEditData({ ...editData, username: e.target.value })}
+                                                                className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-sm text-gray-400">{emp.username}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-400">
+                                                        {new Date(emp.created_at).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            {editingId === emp.id ? (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => saveEdit(emp.id)}
+                                                                        className="p-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-lg transition-colors cursor-pointer"
+                                                                        title="Save"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setEditingId(null)}
+                                                                        className="p-1.5 bg-gray-700/50 text-gray-400 hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+                                                                        title="Cancel"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => startEdit(emp)}
+                                                                        className="p-1.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 rounded-lg transition-colors cursor-pointer"
+                                                                        title="Edit"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => deleteEmployee(emp.id, emp.name)}
+                                                                        className="p-1.5 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-lg transition-colors cursor-pointer"
+                                                                        title="Delete"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Mobile cards */}
+                                <div className="md:hidden divide-y divide-gray-800">
+                                    {employees.map((emp) => (
+                                        <div key={emp.id} className="p-4 animate-fade-in-up">
+                                            {editingId === emp.id ? (
+                                                <div className="space-y-3">
+                                                    <input
+                                                        type="text"
+                                                        value={editData.name}
+                                                        onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                                                        placeholder="Name"
+                                                        className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={editData.username}
+                                                        onChange={(e) => setEditData({ ...editData, username: e.target.value })}
+                                                        placeholder="Username"
+                                                        className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => saveEdit(emp.id)}
+                                                            className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+                                                        >
+                                                            Save
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setEditingId(null)}
+                                                            className="flex-1 py-2.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-medium rounded-lg transition-colors cursor-pointer"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="w-10 h-10 bg-indigo-600/30 text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                                                            {emp.name[0].toUpperCase()}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium text-white truncate">{emp.name}</p>
+                                                            <p className="text-xs text-gray-400 truncate">@{emp.username}</p>
+                                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                                Joined {new Date(emp.created_at).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                                        <button
+                                                            onClick={() => startEdit(emp)}
+                                                            className="p-2 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 rounded-lg transition-colors cursor-pointer"
+                                                            title="Edit"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => deleteEmployee(emp.id, emp.name)}
+                                                            className="p-2 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-lg transition-colors cursor-pointer"
+                                                            title="Delete"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </div>
                 )}
@@ -343,19 +417,19 @@ export default function AdminDashboard() {
                 {/* Attendance Tab */}
                 {tab === 'attendance' && (
                     <div className="bg-gray-900 rounded-2xl border border-gray-800">
-                        <div className="px-6 py-4 border-b border-gray-800">
-                            <h2 className="text-lg font-semibold text-white mb-3">Attendance Records</h2>
+                        <div className="px-4 sm:px-6 py-4 border-b border-gray-800">
+                            <h2 className="text-base sm:text-lg font-semibold text-white mb-3">Attendance Records</h2>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <input
                                     type="date"
                                     value={filterDate}
                                     onChange={(e) => setFilterDate(e.target.value)}
-                                    className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full sm:w-auto px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 />
                                 <select
                                     value={filterEmployee}
                                     onChange={(e) => setFilterEmployee(e.target.value)}
-                                    className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full sm:w-auto px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 >
                                     <option value="">All Employees</option>
                                     {employees.map((emp) => (
@@ -365,7 +439,7 @@ export default function AdminDashboard() {
                                 {(filterDate || filterEmployee) && (
                                     <button
                                         onClick={() => { setFilterDate(''); setFilterEmployee(''); }}
-                                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm rounded-lg transition-colors cursor-pointer"
+                                        className="w-full sm:w-auto px-4 py-2.5 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-gray-300 text-sm rounded-lg transition-colors cursor-pointer"
                                     >
                                         Clear Filters
                                     </button>
@@ -380,38 +454,61 @@ export default function AdminDashboard() {
                                 No attendance records found.
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b border-gray-800">
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Employee</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Check-in</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-800">
-                                        {filteredAttendance.map((record) => (
-                                            <tr key={record.id} className="hover:bg-gray-800/50">
-                                                <td className="px-6 py-4 text-sm text-white font-medium">
-                                                    {record.users?.name || '—'}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-300">
-                                                    {formatDate(record.date)}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-600/20 text-emerald-400">
-                                                        {record.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-300">
-                                                    {formatTime(record.check_in)}
-                                                </td>
+                            <>
+                                {/* Desktop table */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-gray-800">
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Employee</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Check-in</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-800">
+                                            {filteredAttendance.map((record) => (
+                                                <tr key={record.id} className="hover:bg-gray-800/50">
+                                                    <td className="px-6 py-4 text-sm text-white font-medium">
+                                                        {record.users?.name || '—'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-300">
+                                                        {formatDate(record.date)}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-600/20 text-emerald-400">
+                                                            {record.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-300">
+                                                        {formatTime(record.check_in)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Mobile cards */}
+                                <div className="md:hidden divide-y divide-gray-800">
+                                    {filteredAttendance.map((record) => (
+                                        <div key={record.id} className="p-4 animate-fade-in-up">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <span className="text-sm font-medium text-white">
+                                                    {record.users?.name || '—'}
+                                                </span>
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-600/20 text-emerald-400">
+                                                    {record.status}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs text-gray-400">
+                                                <span>{formatDate(record.date)}</span>
+                                                <span>Check-in: {formatTime(record.check_in)}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </div>
                 )}

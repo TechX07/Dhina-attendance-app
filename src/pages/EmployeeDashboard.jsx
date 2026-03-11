@@ -79,22 +79,22 @@ export default function EmployeeDashboard() {
     return (
         <div className="flex min-h-screen bg-gray-950">
             <Sidebar />
-            <main className="flex-1 p-4 md:p-8 pt-16 md:pt-8">
+            <main className="flex-1 p-3 sm:p-4 md:p-8 pt-16 md:pt-8">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-white">
+                <div className="mb-6 sm:mb-8">
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">
                         Welcome, {session.name}
                     </h1>
-                    <p className="text-gray-400 mt-1">
+                    <p className="text-gray-400 mt-1 text-sm sm:text-base">
                         Track your attendance and stay on top of your schedule.
                     </p>
                 </div>
 
                 {/* Mark Attendance Card */}
-                <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800 mb-8">
+                <div className="bg-gray-900 rounded-2xl p-4 sm:p-6 border border-gray-800 mb-6 sm:mb-8">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <h2 className="text-lg font-semibold text-white">
+                            <h2 className="text-base sm:text-lg font-semibold text-white">
                                 Today&apos;s Attendance
                             </h2>
                             <p className="text-sm text-gray-400">
@@ -109,13 +109,13 @@ export default function EmployeeDashboard() {
                         <button
                             onClick={markAttendance}
                             disabled={markedToday || marking}
-                            className={`px-6 py-3 rounded-xl font-semibold text-sm transition-colors cursor-pointer ${markedToday
+                            className={`w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-sm transition-colors cursor-pointer ${markedToday
                                 ? 'bg-emerald-600/20 text-emerald-400 cursor-default'
-                                : 'bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50'
+                                : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white disabled:opacity-50'
                                 }`}
                         >
                             {markedToday
-                                ? 'Marked Present'
+                                ? '✓ Marked Present'
                                 : marking
                                     ? 'Marking...'
                                     : 'Mark Attendance'}
@@ -125,8 +125,8 @@ export default function EmployeeDashboard() {
 
                 {/* Attendance History */}
                 <div className="bg-gray-900 rounded-2xl border border-gray-800">
-                    <div className="px-6 py-4 border-b border-gray-800">
-                        <h2 className="text-lg font-semibold text-white">
+                    <div className="px-4 sm:px-6 py-4 border-b border-gray-800">
+                        <h2 className="text-base sm:text-lg font-semibold text-white">
                             Attendance History
                         </h2>
                     </div>
@@ -138,40 +138,62 @@ export default function EmployeeDashboard() {
                             No attendance records yet.
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-gray-800">
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Date
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Status
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Check-in Time
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-800">
-                                    {attendance.map((record) => (
-                                        <tr key={record.id} className="hover:bg-gray-800/50">
-                                            <td className="px-6 py-4 text-sm text-gray-300">
-                                                {formatDate(record.date)}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-600/20 text-emerald-400">
-                                                    {record.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-300">
-                                                {formatTime(record.check_in)}
-                                            </td>
+                        <>
+                            {/* Desktop table */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-gray-800">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Date
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Status
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Check-in Time
+                                            </th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-800">
+                                        {attendance.map((record) => (
+                                            <tr key={record.id} className="hover:bg-gray-800/50">
+                                                <td className="px-6 py-4 text-sm text-gray-300">
+                                                    {formatDate(record.date)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-600/20 text-emerald-400">
+                                                        {record.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-300">
+                                                    {formatTime(record.check_in)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile cards */}
+                            <div className="md:hidden divide-y divide-gray-800">
+                                {attendance.map((record) => (
+                                    <div key={record.id} className="p-4 animate-fade-in-up">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium text-white">
+                                                {formatDate(record.date)}
+                                            </span>
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-600/20 text-emerald-400">
+                                                {record.status}
+                                            </span>
+                                        </div>
+                                        <div className="text-xs text-gray-400">
+                                            Check-in: {formatTime(record.check_in)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </div>
             </main>
