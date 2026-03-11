@@ -14,10 +14,10 @@ export const ALLOWED_NETWORKS = [
 ];
 
 // Set to FALSE for development/testing - IP checking is disabled
-export const ENABLE_IP_RESTRICTION = true;
+export const ENABLE_IP_RESTRICTION = false;
 
 // Show IP info to users for debugging
-export const SHOW_IP_INFO = true;
+export const SHOW_IP_INFO = false;
 
 // Allow localhost for development (useful for testing on localhost:5173)
 export const ALLOW_LOCALHOST = true;
