@@ -1,4 +1,4 @@
-const CACHE_NAME = 'attendance-v1';
+const CACHE_NAME = 'attendance-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -41,6 +41,22 @@ self.addEventListener('fetch', event => {
 
   // Skip cross-origin requests
   if (url.origin !== location.origin) {
+    return;
+  }
+
+  // Always try network first for page navigation so new deploys are picked up.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put('/index.html', responseToCache);
+          });
+          return response;
+        })
+        .catch(() => caches.match('/index.html'))
+    );
     return;
   }
 
@@ -124,8 +140,8 @@ self.addEventListener('push', event => {
   const title = data.title || 'Attendance Manager';
   const options = {
     body: data.body || 'You have a notification',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/icon-192.svg',
+    badge: '/icon-192.svg',
     tag: 'notification',
     requireInteraction: false,
   };
