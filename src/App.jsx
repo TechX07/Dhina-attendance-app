@@ -3,6 +3,7 @@ import { ToastProvider } from './components/Toast';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import OfflineIndicator from './components/OfflineIndicator';
 import ProtectedRoute from './components/ProtectedRoute';
+import NetworkCheck from './components/NetworkCheck';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
@@ -18,9 +19,10 @@ function RootRedirect() {
 export default function App() {
   return (
     <ToastProvider>
-      <OfflineIndicator />
-      <PWAInstallPrompt />
-      <Routes>
+      <NetworkCheck>
+        <OfflineIndicator />
+        <PWAInstallPrompt />
+        <Routes>
         <Route path="/login" element={<Login />} />
         <Route
           path="/admin"
@@ -48,6 +50,7 @@ export default function App() {
         />
         <Route path="*" element={<RootRedirect />} />
       </Routes>
+      </NetworkCheck>
     </ToastProvider>
   );
 }
