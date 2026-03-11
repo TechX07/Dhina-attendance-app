@@ -123,6 +123,59 @@ export async function getLocalIP() {
     return preferred;
 }
 
+function isIpAllowed(userIP, allowedIP) {
+    if (!userIP || !allowedIP) return false;
+    if (userIP === allowedIP) return true;
+
+    const userParts = userIP.split('.');
+    const allowedParts = allowedIP.split('.');
+
+    if (userParts.length !== 4 || allowedParts.length !== 4) {
+        return false;
+    }
+
+    return (
+        userParts[0] === allowedParts[0] &&
+        userParts[1] === allowedParts[1] &&
+        userParts[2] === allowedParts[2]
+    );
+}
+
+async function fetchPublicIPFrom(url, isJson = false) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+
+    try {
+        const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+        if (!response.ok) return null;
+
+        const value = isJson
+            ? (await response.json())?.ip
+            : (await response.text())?.trim();
+
+        return /^\d{1,3}(\.\d{1,3}){3}$/.test(value || '') ? value : null;
+    } catch (_error) {
+        return null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+export async function getPublicIP() {
+    const providers = [
+        () => fetchPublicIPFrom('https://api.ipify.org?format=json', true),
+        () => fetchPublicIPFrom('https://ipv4.icanhazip.com'),
+        () => fetchPublicIPFrom('https://ifconfig.me/ip')
+    ];
+
+    for (const provider of providers) {
+        const ip = await provider();
+        if (ip) return ip;
+    }
+
+    return null;
+}
+
 /**
  * Check if user is on the allowed WiFi network
  * @param {string|string[]} allowedIPs - Single IP or array of allowed IPs
@@ -130,36 +183,33 @@ export async function getLocalIP() {
  */
 export async function isOnAllowedNetwork(allowedIPs) {
     try {
-        const userIPs = await getLocalIPs();
-        
-        if (!userIPs.length) {
-            console.warn('Could not detect local IP address');
-            return false;
+        const options = Array.isArray(allowedIPs) || typeof allowedIPs === 'string'
+            ? {
+                allowedLocalIPs: Array.isArray(allowedIPs) ? allowedIPs : [allowedIPs],
+                allowedPublicIPs: [],
+                enablePublicIPFallback: false,
+            }
+            : {
+                allowedLocalIPs: allowedIPs?.allowedLocalIPs || [],
+                allowedPublicIPs: allowedIPs?.allowedPublicIPs || [],
+                enablePublicIPFallback: Boolean(allowedIPs?.enablePublicIPFallback),
+            };
+
+        const userLocalIPs = await getLocalIPs();
+
+        const localMatch = userLocalIPs.some(userIP =>
+            options.allowedLocalIPs.some(allowedIP => isIpAllowed(userIP, allowedIP))
+        );
+        if (localMatch) return true;
+
+        if (options.enablePublicIPFallback && options.allowedPublicIPs.length) {
+            const publicIP = await getPublicIP();
+            if (!publicIP) return false;
+
+            return options.allowedPublicIPs.some(allowedIP => isIpAllowed(publicIP, allowedIP));
         }
 
-        const allowedList = Array.isArray(allowedIPs) ? allowedIPs : [allowedIPs];
-        
-        // Allow access if any detected local IP matches any allowed IP/subnet.
-        const isAllowed = userIPs.some((userIP) => {
-            return allowedList.some((allowedIP) => {
-                if (userIP === allowedIP) return true;
-
-                const userParts = userIP.split('.');
-                const allowedParts = allowedIP.split('.');
-
-                if (userParts.length !== 4 || allowedParts.length !== 4) {
-                    return false;
-                }
-
-                return (
-                    userParts[0] === allowedParts[0] &&
-                    userParts[1] === allowedParts[1] &&
-                    userParts[2] === allowedParts[2]
-                );
-            });
-        });
-
-        return isAllowed;
+        return false;
     } catch (error) {
         console.error('Error checking network:', error);
         return false;
@@ -171,9 +221,11 @@ export async function isOnAllowedNetwork(allowedIPs) {
  */
 export async function getNetworkInfo() {
     const ips = await getLocalIPs();
+    const publicIP = await getPublicIP();
     return {
         ip: ips[0] || null,
         ips,
+        publicIP,
         timestamp: new Date().toISOString()
     };
 }

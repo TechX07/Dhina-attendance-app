@@ -12,6 +12,15 @@ export const ALLOWED_NETWORKS = [
     '192.168.29.0',       // Your WiFi subnet (matches 192.168.29.X)
 ];
 
+// Fallback for hosted environments where browsers hide local IP via WebRTC privacy.
+// Replace this if your ISP public IP changes.
+export const ALLOWED_PUBLIC_IPS = [
+    '49.47.218.139',
+];
+
+// Keep TRUE to allow public IP fallback when local IP detection is blocked.
+export const ENABLE_PUBLIC_IP_FALLBACK = true;
+
 // Keep this TRUE so the app works only on allowed WiFi networks
 export const ENABLE_IP_RESTRICTION = true;
 

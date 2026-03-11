@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getNetworkInfo, isOnAllowedNetwork } from '../utils/networkVerification';
-import { ALLOWED_NETWORKS, ENABLE_IP_RESTRICTION, SHOW_IP_INFO, ALLOW_LOCALHOST } from '../config/allowedNetworks';
+import {
+    ALLOWED_NETWORKS,
+    ALLOWED_PUBLIC_IPS,
+    ENABLE_IP_RESTRICTION,
+    ENABLE_PUBLIC_IP_FALLBACK,
+    SHOW_IP_INFO,
+    ALLOW_LOCALHOST,
+} from '../config/allowedNetworks';
 
 export default function NetworkCheck({ children, onNetworkCheckComplete }) {
     const [networkStatus, setNetworkStatus] = useState('checking');
@@ -43,16 +50,20 @@ export default function NetworkCheck({ children, onNetworkCheckComplete }) {
             ]);
 
             console.log('[NetworkCheck] Network info:', networkInfo);
-            setUserIP(networkInfo.ip);
+            setUserIP(networkInfo.ip || networkInfo.publicIP);
 
-            // If IP detection failed, show a more helpful state
-            if (!networkInfo.ip) {
-                console.warn('[NetworkCheck] IP detection returned null');
+            // If both local and public IP detection fail, show a helpful state.
+            if (!networkInfo.ip && !networkInfo.publicIP) {
+                console.warn('[NetworkCheck] Both local and public IP detection returned null');
                 setNetworkStatus('detection-failed');
                 return;
             }
 
-            const isAllowed = await isOnAllowedNetwork(ALLOWED_NETWORKS);
+            const isAllowed = await isOnAllowedNetwork({
+                allowedLocalIPs: ALLOWED_NETWORKS,
+                allowedPublicIPs: ALLOWED_PUBLIC_IPS,
+                enablePublicIPFallback: ENABLE_PUBLIC_IP_FALLBACK,
+            });
             console.log('[NetworkCheck] Is allowed:', isAllowed);
             
             if (isAllowed) {
@@ -60,7 +71,7 @@ export default function NetworkCheck({ children, onNetworkCheckComplete }) {
                 onNetworkCheckComplete?.(true);
             } else {
                 setNetworkStatus('denied');
-                setError(`Access denied. You are not on the authorized network. Your IP: ${networkInfo.ip}`);
+                setError(`Access denied. You are not on the authorized network. Detected IP: ${networkInfo.ip || networkInfo.publicIP || 'Unknown'}`);
                 onNetworkCheckComplete?.(false);
             }
         } catch (err) {
@@ -140,7 +151,7 @@ export default function NetworkCheck({ children, onNetworkCheckComplete }) {
                         fontSize: '16px',
                         lineHeight: '1.6'
                     }}>
-                        Could not detect your local IP address. This might be due to browser restrictions or network configuration.
+                        Could not detect your network IP. This may happen due to browser privacy restrictions or network configuration.
                     </p>
                     {SHOW_IP_INFO && (
                         <div style={{
@@ -153,6 +164,7 @@ export default function NetworkCheck({ children, onNetworkCheckComplete }) {
                         }}>
                             <p><strong>Status:</strong> Detection failed</p>
                             <p><strong>Allowed Networks:</strong> {ALLOWED_NETWORKS.join(', ')}</p>
+                            <p><strong>Allowed Public IPs:</strong> {ALLOWED_PUBLIC_IPS.join(', ')}</p>
                             <p style={{ marginTop: '10px', fontSize: '12px' }}>Try connecting to your WiFi again or use a different browser.</p>
                         </div>
                     )}
@@ -232,6 +244,7 @@ export default function NetworkCheck({ children, onNetworkCheckComplete }) {
                         }}>
                             <p><strong>Your IP:</strong> {userIP || 'Unable to detect'}</p>
                             <p><strong>Allowed Networks:</strong> {ALLOWED_NETWORKS.join(', ')}</p>
+                            <p><strong>Allowed Public IPs:</strong> {ALLOWED_PUBLIC_IPS.join(', ')}</p>
                         </div>
                     )}
                     <div style={{
