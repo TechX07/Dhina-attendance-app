@@ -9,15 +9,14 @@
  */
 
 export const ALLOWED_NETWORKS = [
-    '192.168.1.37',      // Change this to your office WiFi subnet
-    '192.168.1.0',       // Add more networks if needed
+    '192.168.29.0',       // Your WiFi subnet (matches 192.168.29.X)
 ];
 
-// Set to FALSE for development/testing - IP checking is disabled
-export const ENABLE_IP_RESTRICTION = false;
+// Keep this TRUE so the app works only on allowed WiFi networks
+export const ENABLE_IP_RESTRICTION = true;
 
 // Show IP info to users for debugging
 export const SHOW_IP_INFO = false;
 
-// Allow localhost for development (useful for testing on localhost:5173)
-export const ALLOW_LOCALHOST = true;
+// Set FALSE so localhost is not bypassed
+export const ALLOW_LOCALHOST = false;
