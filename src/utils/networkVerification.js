@@ -1,8 +1,9 @@
 /**
- * Get the local IP address using WebRTC
- * This works because WebRTC needs to know your local IP for peer connections
+ * Get all local IP addresses using WebRTC.
+ * Browsers can expose multiple interfaces (WiFi, VPN, virtual adapters),
+ * so we collect all IPs and evaluate them later.
  */
-export async function getLocalIP() {
+export async function getLocalIPs() {
     return new Promise((resolve) => {
         console.log('[Network] Starting IP detection...');
         
@@ -24,12 +25,12 @@ export async function getLocalIP() {
             }
         };
 
-        const resolveIP = (ip) => {
+        const resolveIPs = () => {
             if (!resolved) {
                 resolved = true;
                 cleanup();
-                console.log('[Network] Detected IP:', ip);
-                resolve(ip || null);
+                console.log('[Network] Detected IP list:', ips);
+                resolve(ips);
             }
         };
 
@@ -50,17 +51,14 @@ export async function getLocalIP() {
                 })
                 .catch(err => {
                     console.error('[Network] Offer error:', err);
-                    resolveIP(null);
+                    resolveIPs();
                 });
 
             pc.onicecandidate = (ice) => {
                 try {
                     if (!ice || !ice.candidate) {
                         console.log('[Network] ICE gathering complete');
-                        // If we found IPs, resolve with the first one
-                        if (ips.length > 0) {
-                            resolveIP(ips[0]);
-                        }
+                        resolveIPs();
                         return;
                     }
 
@@ -89,11 +87,6 @@ export async function getLocalIP() {
                         if (!isLocal && ips.indexOf(ipAddress) === -1) {
                             ips.push(ipAddress);
                             console.log('[Network] Added IP to list. Private:', isPrivate);
-                            
-                            // Resolve immediately with first private IP
-                            if (isPrivate) {
-                                resolveIP(ipAddress);
-                            }
                         }
                     }
                 } catch (err) {
@@ -104,15 +97,30 @@ export async function getLocalIP() {
             // Timeout - 3 seconds max
             timeoutId = setTimeout(() => {
                 console.log('[Network] Timeout reached. Resolving with found IPs:', ips);
-                resolveIP(ips.length > 0 ? ips[0] : null);
+                resolveIPs();
             }, 3000);
 
         } catch (error) {
             console.error('[Network] Error in getLocalIP:', error);
             cleanup();
-            resolve(null);
+            resolve([]);
         }
     });
+}
+
+/**
+ * Backward-compatible helper that returns one preferred local IP.
+ */
+export async function getLocalIP() {
+    const ips = await getLocalIPs();
+    if (!ips.length) return null;
+
+    const preferred = ips.find(ip => ip.startsWith('192.168.'))
+        || ips.find(ip => ip.startsWith('10.'))
+        || ips.find(ip => ip.startsWith('172.'))
+        || ips[0];
+
+    return preferred;
 }
 
 /**
@@ -122,32 +130,33 @@ export async function getLocalIP() {
  */
 export async function isOnAllowedNetwork(allowedIPs) {
     try {
-        const userIP = await getLocalIP();
+        const userIPs = await getLocalIPs();
         
-        if (!userIP) {
+        if (!userIPs.length) {
             console.warn('Could not detect local IP address');
             return false;
         }
 
         const allowedList = Array.isArray(allowedIPs) ? allowedIPs : [allowedIPs];
         
-        // Check if user's IP matches any allowed IP or is on the same subnet
-        const isAllowed = allowedList.some(allowedIP => {
-            // Exact match
-            if (userIP === allowedIP) return true;
-            
-            // Subnet match (for networks like 192.168.1.0/24)
-            const userParts = userIP.split('.');
-            const allowedParts = allowedIP.split('.');
-            
-            // Match first 3 octets for subnet /24
-            if (userParts[0] === allowedParts[0] && 
-                userParts[1] === allowedParts[1] && 
-                userParts[2] === allowedParts[2]) {
-                return true;
-            }
-            
-            return false;
+        // Allow access if any detected local IP matches any allowed IP/subnet.
+        const isAllowed = userIPs.some((userIP) => {
+            return allowedList.some((allowedIP) => {
+                if (userIP === allowedIP) return true;
+
+                const userParts = userIP.split('.');
+                const allowedParts = allowedIP.split('.');
+
+                if (userParts.length !== 4 || allowedParts.length !== 4) {
+                    return false;
+                }
+
+                return (
+                    userParts[0] === allowedParts[0] &&
+                    userParts[1] === allowedParts[1] &&
+                    userParts[2] === allowedParts[2]
+                );
+            });
         });
 
         return isAllowed;
@@ -161,9 +170,10 @@ export async function isOnAllowedNetwork(allowedIPs) {
  * Get formatted network info for display
  */
 export async function getNetworkInfo() {
-    const ip = await getLocalIP();
+    const ips = await getLocalIPs();
     return {
-        ip,
+        ip: ips[0] || null,
+        ips,
         timestamp: new Date().toISOString()
     };
 }
