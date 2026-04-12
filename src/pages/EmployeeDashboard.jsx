@@ -4,6 +4,13 @@ import { getSession } from '../utils/auth';
 import { useToast } from '../components/Toast';
 import Sidebar from '../components/Sidebar';
 import LoadingSpinner from '../components/LoadingSpinner';
+import {
+    OFFICE_LOCATION,
+    LOCATION_RADIUS_METERS,
+    ENABLE_LOCATION_RESTRICTION,
+    ALLOW_LOCALHOST_LOCATION_BYPASS,
+} from '../config/allowedLocation';
+import { verifyLocationInRadius } from '../utils/locationVerification';
 
 export default function EmployeeDashboard() {
     const session = getSession();
@@ -12,10 +19,63 @@ export default function EmployeeDashboard() {
     const [loading, setLoading] = useState(true);
     const [marking, setMarking] = useState(false);
     const [markedToday, setMarkedToday] = useState(false);
+    const [checkingLocation, setCheckingLocation] = useState(false);
+    const [locationAllowed, setLocationAllowed] = useState(!ENABLE_LOCATION_RESTRICTION);
+    const [locationMessage, setLocationMessage] = useState('Location verification not required.');
 
     useEffect(() => {
         fetchAttendance();
+        verifyAttendanceLocation();
     }, []);
+
+    async function verifyAttendanceLocation() {
+        if (!ENABLE_LOCATION_RESTRICTION) {
+            setLocationAllowed(true);
+            setLocationMessage('Location restriction is disabled.');
+            return true;
+        }
+
+        if (ALLOW_LOCALHOST_LOCATION_BYPASS && window.location.hostname === 'localhost') {
+            setLocationAllowed(true);
+            setLocationMessage('Location check bypassed on localhost.');
+            return true;
+        }
+
+        if (OFFICE_LOCATION.latitude === 0 || OFFICE_LOCATION.longitude === 0) {
+            setLocationAllowed(false);
+            setLocationMessage('Office location is not configured. Ask admin to set latitude/longitude.');
+            return false;
+        }
+
+        try {
+            setCheckingLocation(true);
+            const result = await verifyLocationInRadius({
+                targetLatitude: OFFICE_LOCATION.latitude,
+                targetLongitude: OFFICE_LOCATION.longitude,
+                radiusMeters: LOCATION_RADIUS_METERS,
+            });
+
+            if (result.isWithinRadius) {
+                setLocationAllowed(true);
+                setLocationMessage(
+                    `You are inside office range (${Math.round(result.distance)}m away).`
+                );
+                return true;
+            }
+
+            setLocationAllowed(false);
+            setLocationMessage(
+                `You are outside office range (${Math.round(result.distance)}m away). Move closer to mark attendance.`
+            );
+            return false;
+        } catch (error) {
+            setLocationAllowed(false);
+            setLocationMessage(error.message || 'Unable to verify your location.');
+            return false;
+        } finally {
+            setCheckingLocation(false);
+        }
+    }
 
     async function fetchAttendance() {
         setLoading(true);
@@ -36,6 +96,12 @@ export default function EmployeeDashboard() {
     }
 
     async function markAttendance() {
+        const isAllowedByLocation = await verifyAttendanceLocation();
+        if (!isAllowedByLocation) {
+            addToast('Attendance can only be marked from office location', 'error');
+            return;
+        }
+
         setMarking(true);
         const today = new Date().toISOString().split('T')[0];
 
@@ -105,21 +171,43 @@ export default function EmployeeDashboard() {
                                     day: 'numeric',
                                 })}
                             </p>
+                            <p className={`text-xs mt-2 ${locationAllowed ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                {checkingLocation ? 'Checking your current location...' : locationMessage}
+                            </p>
+                            {OFFICE_LOCATION.mapsLink && (
+                                <a
+                                    href={OFFICE_LOCATION.mapsLink}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs text-indigo-400 hover:text-indigo-300 underline"
+                                >
+                                    Open office location in map
+                                </a>
+                            )}
                         </div>
-                        <button
-                            onClick={markAttendance}
-                            disabled={markedToday || marking}
-                            className={`w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-sm transition-colors cursor-pointer ${markedToday
-                                ? 'bg-emerald-600/20 text-emerald-400 cursor-default'
-                                : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white disabled:opacity-50'
-                                }`}
-                        >
-                            {markedToday
-                                ? '✓ Marked Present'
-                                : marking
-                                    ? 'Marking...'
-                                    : 'Mark Attendance'}
-                        </button>
+                        <div className="w-full sm:w-auto flex gap-2">
+                            <button
+                                onClick={verifyAttendanceLocation}
+                                disabled={checkingLocation}
+                                className="px-4 py-3 rounded-xl font-semibold text-sm bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-gray-100 disabled:opacity-50"
+                            >
+                                {checkingLocation ? 'Checking...' : 'Verify Location'}
+                            </button>
+                            <button
+                                onClick={markAttendance}
+                                disabled={markedToday || marking || checkingLocation || !locationAllowed}
+                                className={`px-6 py-3 rounded-xl font-semibold text-sm transition-colors cursor-pointer ${markedToday
+                                    ? 'bg-emerald-600/20 text-emerald-400 cursor-default'
+                                    : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white disabled:opacity-50'
+                                    }`}
+                            >
+                                {markedToday
+                                    ? '✓ Marked Present'
+                                    : marking
+                                        ? 'Marking...'
+                                        : 'Mark Attendance'}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
