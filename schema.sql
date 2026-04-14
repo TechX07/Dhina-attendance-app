@@ -9,7 +9,14 @@ create table if not exists public.users (
   username text unique not null,
   password_hash text not null,
   role text not null check (role in ('admin', 'employee')),
+  employee_type text not null default 'full_time' check (employee_type in ('full_time', 'part_time')),
   created_at timestamptz default now()
+);
+
+create table if not exists public.app_settings (
+  key text primary key,
+  value text,
+  updated_at timestamptz not null default now()
 );
 
 -- 2. Attendance table
@@ -26,6 +33,7 @@ create table if not exists public.attendance (
 -- 3. Enable Row Level Security
 alter table public.users enable row level security;
 alter table public.attendance enable row level security;
+alter table public.app_settings enable row level security;
 
 -- 4. RLS Policies — Users table
 -- Allow anyone to read (needed for login)
@@ -54,6 +62,18 @@ create policy "Allow insert attendance"
   on public.attendance for insert
   with check (true);
 
+create policy "Allow read app settings"
+  on public.app_settings for select
+  using (true);
+
+create policy "Allow upsert app settings"
+  on public.app_settings for insert
+  with check (true);
+
+create policy "Allow update app settings"
+  on public.app_settings for update
+  using (true);
+
 -- 6. Seed admin account
 -- Password: admin123 → SHA-256 hash
 insert into public.users (name, username, password_hash, role)
@@ -63,3 +83,7 @@ values (
   '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
   'admin'
 ) on conflict (username) do nothing;
+
+insert into public.app_settings (key, value)
+values ('location_restriction_enabled', 'true')
+on conflict (key) do nothing;

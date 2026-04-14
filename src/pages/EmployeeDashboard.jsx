@@ -11,6 +11,9 @@ import {
     ALLOW_LOCALHOST_LOCATION_BYPASS,
 } from '../config/allowedLocation';
 import { verifyLocationInRadius } from '../utils/locationVerification';
+import { getBooleanSetting } from '../utils/appSettings';
+
+const LOCATION_SETTING_KEY = 'location_restriction_enabled';
 
 export default function EmployeeDashboard() {
     const session = getSession();
@@ -20,16 +23,31 @@ export default function EmployeeDashboard() {
     const [marking, setMarking] = useState(false);
     const [markedToday, setMarkedToday] = useState(false);
     const [checkingLocation, setCheckingLocation] = useState(false);
+    const [locationRestrictionEnabled, setLocationRestrictionEnabled] = useState(ENABLE_LOCATION_RESTRICTION);
     const [locationAllowed, setLocationAllowed] = useState(!ENABLE_LOCATION_RESTRICTION);
     const [locationMessage, setLocationMessage] = useState('Location verification not required.');
 
     useEffect(() => {
         fetchAttendance();
-        verifyAttendanceLocation();
+        initializeLocationVerification();
     }, []);
 
-    async function verifyAttendanceLocation() {
-        if (!ENABLE_LOCATION_RESTRICTION) {
+    async function getLatestRestrictionSetting() {
+        const enabled = await getBooleanSetting(LOCATION_SETTING_KEY, ENABLE_LOCATION_RESTRICTION);
+        setLocationRestrictionEnabled(enabled);
+        return enabled;
+    }
+
+    async function initializeLocationVerification() {
+        const enabled = await getLatestRestrictionSetting();
+        verifyAttendanceLocation(enabled);
+    }
+
+    async function verifyAttendanceLocation(settingOverride = null) {
+        const restrictionEnabled =
+            typeof settingOverride === 'boolean' ? settingOverride : await getLatestRestrictionSetting();
+
+        if (!restrictionEnabled) {
             setLocationAllowed(true);
             setLocationMessage('Location restriction is disabled.');
             return true;
@@ -173,6 +191,9 @@ export default function EmployeeDashboard() {
                             </p>
                             <p className={`text-xs mt-2 ${locationAllowed ? 'text-emerald-400' : 'text-amber-400'}`}>
                                 {checkingLocation ? 'Checking your current location...' : locationMessage}
+                            </p>
+                            <p className="text-xs mt-1 text-gray-500">
+                                Restriction status: {locationRestrictionEnabled ? 'ON' : 'OFF (Testing)'}
                             </p>
                             {OFFICE_LOCATION.mapsLink && (
                                 <a

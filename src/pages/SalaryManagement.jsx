@@ -32,6 +32,7 @@ export default function SalaryManagement() {
     const addToast = useToast();
     const [employees, setEmployees] = useState([]);
     const [salaryData, setSalaryData] = useState({});
+    const [presentDaysByUser, setPresentDaysByUser] = useState({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState({});
 
@@ -46,6 +47,14 @@ export default function SalaryManagement() {
         return getWorkingDaysInMonth(year, month - 1);
     }, [selectedMonth]);
 
+    const getMonthDateRange = useCallback(() => {
+        const [year, month] = selectedMonth.split('-').map(Number);
+        const firstDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        const lastDate = new Date(year, month, 0).getDate();
+        const lastDateString = `${year}-${String(month).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`;
+        return { firstDate, lastDateString };
+    }, [selectedMonth]);
+
     useEffect(() => {
         fetchData();
     }, [selectedMonth]);
@@ -55,7 +64,7 @@ export default function SalaryManagement() {
 
         const { data: empData, error: empError } = await supabase
             .from('users')
-            .select('id, name, username')
+            .select('*')
             .eq('role', 'employee')
             .order('name');
 
@@ -76,6 +85,20 @@ export default function SalaryManagement() {
             return;
         }
 
+        const { firstDate, lastDateString } = getMonthDateRange();
+        const { data: attendanceData, error: attendanceError } = await supabase
+            .from('attendance')
+            .select('user_id, date, status')
+            .eq('status', 'Present')
+            .gte('date', firstDate)
+            .lte('date', lastDateString);
+
+        if (attendanceError) {
+            addToast('Failed to load attendance for salary calculation', 'error');
+            setLoading(false);
+            return;
+        }
+
         setEmployees(empData || []);
 
         const map = {};
@@ -83,25 +106,40 @@ export default function SalaryManagement() {
             map[s.user_id] = {
                 id: s.id,
                 monthly_salary: s.monthly_salary,
-                leave_days: s.leave_days,
             };
         });
         setSalaryData(map);
+
+        const presentMap = {};
+        (attendanceData || []).forEach((record) => {
+            if (!presentMap[record.user_id]) {
+                presentMap[record.user_id] = new Set();
+            }
+            presentMap[record.user_id].add(record.date);
+        });
+
+        const normalizedPresentMap = {};
+        Object.keys(presentMap).forEach((userId) => {
+            normalizedPresentMap[userId] = presentMap[userId].size;
+        });
+
+        setPresentDaysByUser(normalizedPresentMap);
         setLoading(false);
     }
 
-    function calculateSalary(monthlySalary, leaveDays) {
+    function calculateSalary(monthlySalary, presentDays) {
         const workingDays = getWorkingDays();
         const dailySalary = workingDays > 0 ? monthlySalary / workingDays : 0;
-        const effectiveDays = Math.max(0, workingDays - leaveDays);
-        const finalSalary = dailySalary * effectiveDays;
-        return { dailySalary, finalSalary, workingDays };
+        const payableDays = Math.min(workingDays, Math.max(0, presentDays));
+        const absentDays = Math.max(0, workingDays - payableDays);
+        const finalSalary = dailySalary * payableDays;
+        return { dailySalary, finalSalary, workingDays, payableDays, absentDays };
     }
 
-    async function saveSalary(userId, monthlySalary, leaveDays) {
+    async function saveSalary(userId, monthlySalary, presentDays) {
         setSaving((prev) => ({ ...prev, [userId]: true }));
 
-        const { dailySalary, finalSalary } = calculateSalary(monthlySalary, leaveDays);
+        const { dailySalary, finalSalary, absentDays } = calculateSalary(monthlySalary, presentDays);
         const existing = salaryData[userId];
 
         let error;
@@ -112,7 +150,7 @@ export default function SalaryManagement() {
                 .update({
                     monthly_salary: monthlySalary,
                     daily_salary: parseFloat(dailySalary.toFixed(2)),
-                    leave_days: leaveDays,
+                    leave_days: absentDays,
                     final_salary: parseFloat(finalSalary.toFixed(2)),
                 })
                 .eq('id', existing.id));
@@ -122,7 +160,7 @@ export default function SalaryManagement() {
                 month: selectedMonth,
                 monthly_salary: monthlySalary,
                 daily_salary: parseFloat(dailySalary.toFixed(2)),
-                leave_days: leaveDays,
+                leave_days: absentDays,
                 final_salary: parseFloat(finalSalary.toFixed(2)),
             }));
         }
@@ -156,7 +194,7 @@ export default function SalaryManagement() {
                 <div className="mb-6 sm:mb-8">
                     <h1 className="text-xl sm:text-2xl font-bold text-white">Salary Management</h1>
                     <p className="text-gray-400 mt-1 text-sm sm:text-base">
-                        Manage employee salaries. Working days (excl. Sundays): <span className="text-white font-medium">{workingDays}</span>
+                        Monthly salary is auto-calculated from attendance present days. Working days (excl. Sundays): <span className="text-white font-medium">{workingDays}</span>
                     </p>
                 </div>
 
@@ -200,13 +238,19 @@ export default function SalaryManagement() {
                                                 Employee
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Type
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                                 Monthly Salary
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                                 Daily Salary
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                                Leave Days
+                                                Present Days
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Absent Days
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                                 Final Salary
@@ -218,10 +262,10 @@ export default function SalaryManagement() {
                                     </thead>
                                     <tbody className="divide-y divide-gray-800">
                                         {employees.map((emp) => {
-                                            const data = salaryData[emp.id] || { monthly_salary: 0, leave_days: 0 };
+                                            const data = salaryData[emp.id] || { monthly_salary: 0 };
                                             const monthlySalary = parseFloat(data.monthly_salary) || 0;
-                                            const leaveDays = parseInt(data.leave_days) || 0;
-                                            const { dailySalary, finalSalary } = calculateSalary(monthlySalary, leaveDays);
+                                            const presentDays = presentDaysByUser[emp.id] || 0;
+                                            const { dailySalary, finalSalary, absentDays } = calculateSalary(monthlySalary, presentDays);
 
                                             return (
                                                 <tr key={emp.id} className="hover:bg-gray-800/50">
@@ -232,6 +276,9 @@ export default function SalaryManagement() {
                                                             </div>
                                                             <span className="text-sm text-white font-medium">{emp.name}</span>
                                                         </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-indigo-300 capitalize">
+                                                        {(emp.employee_type || 'full_time').replace('_', ' ')}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <input
@@ -248,25 +295,18 @@ export default function SalaryManagement() {
                                                     <td className="px-6 py-4 text-sm text-gray-300">
                                                         {monthlySalary > 0 ? `${dailySalary.toFixed(2)}` : '—'}
                                                     </td>
-                                                    <td className="px-6 py-4">
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            max={workingDays}
-                                                            value={data.leave_days || ''}
-                                                            onChange={(e) =>
-                                                                handleFieldChange(emp.id, 'leave_days', e.target.value)
-                                                            }
-                                                            placeholder="0"
-                                                            className="w-20 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                        />
+                                                    <td className="px-6 py-4 text-sm text-gray-300">
+                                                        {presentDays}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-amber-300">
+                                                        {absentDays}
                                                     </td>
                                                     <td className="px-6 py-4 text-sm font-medium text-emerald-400">
                                                         {monthlySalary > 0 ? `${finalSalary.toFixed(2)}` : '—'}
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
                                                         <button
-                                                            onClick={() => saveSalary(emp.id, monthlySalary, leaveDays)}
+                                                            onClick={() => saveSalary(emp.id, monthlySalary, presentDays)}
                                                             disabled={saving[emp.id]}
                                                             className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
                                                         >
@@ -283,10 +323,10 @@ export default function SalaryManagement() {
                             {/* Mobile / Tablet cards */}
                             <div className="lg:hidden divide-y divide-gray-800">
                                 {employees.map((emp) => {
-                                    const data = salaryData[emp.id] || { monthly_salary: 0, leave_days: 0 };
+                                    const data = salaryData[emp.id] || { monthly_salary: 0 };
                                     const monthlySalary = parseFloat(data.monthly_salary) || 0;
-                                    const leaveDays = parseInt(data.leave_days) || 0;
-                                    const { dailySalary, finalSalary } = calculateSalary(monthlySalary, leaveDays);
+                                    const presentDays = presentDaysByUser[emp.id] || 0;
+                                    const { dailySalary, finalSalary, absentDays } = calculateSalary(monthlySalary, presentDays);
 
                                     return (
                                         <div key={emp.id} className="p-4 animate-fade-in-up">
@@ -295,7 +335,12 @@ export default function SalaryManagement() {
                                                 <div className="w-10 h-10 bg-indigo-600/30 text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
                                                     {emp.name[0].toUpperCase()}
                                                 </div>
-                                                <span className="text-sm text-white font-medium">{emp.name}</span>
+                                                <div>
+                                                    <span className="text-sm text-white font-medium">{emp.name}</span>
+                                                    <p className="text-xs text-indigo-300 capitalize">
+                                                        {(emp.employee_type || 'full_time').replace('_', ' ')}
+                                                    </p>
+                                                </div>
                                             </div>
 
                                             {/* Input fields in a grid */}
@@ -314,18 +359,10 @@ export default function SalaryManagement() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs text-gray-400 mb-1">Leave Days</label>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max={workingDays}
-                                                        value={data.leave_days || ''}
-                                                        onChange={(e) =>
-                                                            handleFieldChange(emp.id, 'leave_days', e.target.value)
-                                                        }
-                                                        placeholder="0"
-                                                        className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                    />
+                                                    <label className="block text-xs text-gray-400 mb-1">Present Days</label>
+                                                    <div className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 text-sm">
+                                                        {presentDays}
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -339,6 +376,10 @@ export default function SalaryManagement() {
                                                         </span>
                                                     </div>
                                                     <div>
+                                                        <span className="text-gray-400">Absent: </span>
+                                                        <span className="text-amber-300">{absentDays}</span>
+                                                    </div>
+                                                    <div>
                                                         <span className="text-gray-400">Final: </span>
                                                         <span className="text-emerald-400 font-medium">
                                                             {monthlySalary > 0 ? finalSalary.toFixed(2) : '—'}
@@ -346,7 +387,7 @@ export default function SalaryManagement() {
                                                     </div>
                                                 </div>
                                                 <button
-                                                    onClick={() => saveSalary(emp.id, monthlySalary, leaveDays)}
+                                                    onClick={() => saveSalary(emp.id, monthlySalary, presentDays)}
                                                     disabled={saving[emp.id]}
                                                     className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
                                                 >

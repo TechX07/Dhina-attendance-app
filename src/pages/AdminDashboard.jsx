@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { hashPassword } from '../utils/auth';
+import { ENABLE_LOCATION_RESTRICTION } from '../config/allowedLocation';
+import { getBooleanSetting, setBooleanSetting } from '../utils/appSettings';
 import { useToast } from '../components/Toast';
 import Sidebar from '../components/Sidebar';
 import LoadingSpinner from '../components/LoadingSpinner';
+
+const LOCATION_SETTING_KEY = 'location_restriction_enabled';
 
 export default function AdminDashboard() {
     const addToast = useToast();
@@ -13,10 +17,18 @@ export default function AdminDashboard() {
     const [employees, setEmployees] = useState([]);
     const [loadingEmployees, setLoadingEmployees] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
-    const [newEmployee, setNewEmployee] = useState({ name: '', username: '', password: '' });
+    const [newEmployee, setNewEmployee] = useState({
+        name: '',
+        username: '',
+        password: '',
+        employee_type: 'full_time',
+    });
     const [adding, setAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [editData, setEditData] = useState({ name: '', username: '' });
+    const [editData, setEditData] = useState({ name: '', username: '', employee_type: 'full_time' });
+    const [locationRestrictionEnabled, setLocationRestrictionEnabled] = useState(ENABLE_LOCATION_RESTRICTION);
+    const [loadingLocationSetting, setLoadingLocationSetting] = useState(true);
+    const [savingLocationSetting, setSavingLocationSetting] = useState(false);
 
     // Attendance state
     const [attendance, setAttendance] = useState([]);
@@ -27,7 +39,34 @@ export default function AdminDashboard() {
     useEffect(() => {
         fetchEmployees();
         fetchAttendance();
+        fetchLocationRestriction();
     }, []);
+
+    async function fetchLocationRestriction() {
+        setLoadingLocationSetting(true);
+        const enabled = await getBooleanSetting(LOCATION_SETTING_KEY, ENABLE_LOCATION_RESTRICTION);
+        setLocationRestrictionEnabled(enabled);
+        setLoadingLocationSetting(false);
+    }
+
+    async function handleLocationRestrictionToggle() {
+        const nextValue = !locationRestrictionEnabled;
+        setSavingLocationSetting(true);
+        setLocationRestrictionEnabled(nextValue);
+
+        const result = await setBooleanSetting(LOCATION_SETTING_KEY, nextValue);
+
+        if (!result.success) {
+            setLocationRestrictionEnabled(!nextValue);
+            addToast('Failed to update location restriction setting', 'error');
+        } else if (!result.remoteSaved) {
+            addToast('Location setting saved locally for testing only', 'success');
+        } else {
+            addToast(`Location restriction ${nextValue ? 'enabled' : 'disabled'}`, 'success');
+        }
+
+        setSavingLocationSetting(false);
+    }
 
     async function fetchEmployees() {
         setLoadingEmployees(true);
@@ -71,6 +110,7 @@ export default function AdminDashboard() {
                 username: newEmployee.username,
                 password_hash: hash,
                 role: 'employee',
+                employee_type: newEmployee.employee_type,
             });
 
             if (error) {
@@ -81,7 +121,12 @@ export default function AdminDashboard() {
                 }
             } else {
                 addToast('Employee added successfully!', 'success');
-                setNewEmployee({ name: '', username: '', password: '' });
+                setNewEmployee({
+                    name: '',
+                    username: '',
+                    password: '',
+                    employee_type: 'full_time',
+                });
                 setShowAddForm(false);
                 fetchEmployees();
             }
@@ -109,13 +154,21 @@ export default function AdminDashboard() {
 
     function startEdit(emp) {
         setEditingId(emp.id);
-        setEditData({ name: emp.name, username: emp.username });
+        setEditData({
+            name: emp.name,
+            username: emp.username,
+            employee_type: emp.employee_type || 'full_time',
+        });
     }
 
     async function saveEdit(id) {
         const { error } = await supabase
             .from('users')
-            .update({ name: editData.name, username: editData.username })
+            .update({
+                name: editData.name,
+                username: editData.username,
+                employee_type: editData.employee_type,
+            })
             .eq('id', id);
 
         if (error) {
@@ -161,7 +214,34 @@ export default function AdminDashboard() {
                 {/* Header */}
                 <div className="mb-6 sm:mb-8">
                     <h1 className="text-xl sm:text-2xl font-bold text-white">Admin Dashboard</h1>
-                    <p className="text-gray-400 mt-1 text-sm sm:text-base">Manage employees and track attendance.</p>
+                    <p className="text-gray-400 mt-1 text-sm sm:text-base">Manage employees, testing controls, and attendance.</p>
+                </div>
+
+                <div className="bg-gray-900 rounded-2xl border border-gray-800 p-4 sm:p-5 mb-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h2 className="text-sm sm:text-base font-semibold text-white">Location Restriction (Testing)</h2>
+                            <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                                Toggle this OFF to allow attendance marking from any location.
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleLocationRestrictionToggle}
+                            disabled={loadingLocationSetting || savingLocationSetting}
+                            className={`w-full sm:w-auto px-4 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${locationRestrictionEnabled
+                                ? 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white'
+                                : 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white'
+                                } disabled:opacity-60`}
+                        >
+                            {loadingLocationSetting
+                                ? 'Loading...'
+                                : savingLocationSetting
+                                    ? 'Saving...'
+                                    : locationRestrictionEnabled
+                                        ? 'ON (Restricted)'
+                                        : 'OFF (Testing Mode)'}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Tabs */}
@@ -204,7 +284,7 @@ export default function AdminDashboard() {
                         {/* Add Employee Form */}
                         {showAddForm && (
                             <form onSubmit={addEmployee} className="px-4 sm:px-6 py-4 border-b border-gray-800 bg-gray-800/50">
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                     <input
                                         type="text"
                                         placeholder="Full Name"
@@ -229,6 +309,14 @@ export default function AdminDashboard() {
                                         required
                                         className="px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     />
+                                    <select
+                                        value={newEmployee.employee_type}
+                                        onChange={(e) => setNewEmployee({ ...newEmployee, employee_type: e.target.value })}
+                                        className="px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    >
+                                        <option value="full_time">Full Time</option>
+                                        <option value="part_time">Part Time</option>
+                                    </select>
                                 </div>
                                 <button
                                     type="submit"
@@ -255,6 +343,7 @@ export default function AdminDashboard() {
                                             <tr className="border-b border-gray-800">
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Username</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Type</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
                                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                                             </tr>
@@ -289,6 +378,22 @@ export default function AdminDashboard() {
                                                             />
                                                         ) : (
                                                             <span className="text-sm text-gray-400">{emp.username}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {editingId === emp.id ? (
+                                                            <select
+                                                                value={editData.employee_type}
+                                                                onChange={(e) => setEditData({ ...editData, employee_type: e.target.value })}
+                                                                className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                            >
+                                                                <option value="full_time">Full Time</option>
+                                                                <option value="part_time">Part Time</option>
+                                                            </select>
+                                                        ) : (
+                                                            <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-600/20 text-indigo-300 uppercase tracking-wide">
+                                                                {(emp.employee_type || 'full_time').replace('_', ' ')}
+                                                            </span>
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 text-sm text-gray-400">
@@ -359,6 +464,14 @@ export default function AdminDashboard() {
                                                         placeholder="Username"
                                                         className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                     />
+                                                    <select
+                                                        value={editData.employee_type}
+                                                        onChange={(e) => setEditData({ ...editData, employee_type: e.target.value })}
+                                                        className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                    >
+                                                        <option value="full_time">Full Time</option>
+                                                        <option value="part_time">Part Time</option>
+                                                    </select>
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => saveEdit(emp.id)}
@@ -383,6 +496,9 @@ export default function AdminDashboard() {
                                                         <div className="min-w-0">
                                                             <p className="text-sm font-medium text-white truncate">{emp.name}</p>
                                                             <p className="text-xs text-gray-400 truncate">@{emp.username}</p>
+                                                            <p className="text-xs text-indigo-300 capitalize mt-0.5">
+                                                                {(emp.employee_type || 'full_time').replace('_', ' ')}
+                                                            </p>
                                                             <p className="text-xs text-gray-500 mt-0.5">
                                                                 Joined {new Date(emp.created_at).toLocaleDateString()}
                                                             </p>
